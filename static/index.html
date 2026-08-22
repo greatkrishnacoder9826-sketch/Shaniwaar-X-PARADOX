@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emotion // Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#05070a;
+    --grid-line: rgba(57,255,20,0.07);
+    --grid-line-strong: rgba(57,255,20,0.14);
+    --neon: #39ff14;
+    --neon-dim: #1c8a0c;
+    --glass-bg: rgba(255,255,255,0.035);
+    --glass-bg-2: rgba(255,255,255,0.06);
+    --glass-border: rgba(57,255,20,0.22);
+    --white: #f2f5f2;
+    --muted: #7c8a7c;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html,body{
+    height:100%;
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+    overflow-x:hidden;
+  }
+
+  /* graph-paper grid, math-notebook style: fine lines + bold every 5th */
+  body{
+    background-image:
+      repeating-linear-gradient(0deg, var(--grid-line-strong) 0px, var(--grid-line-strong) 1px, transparent 1px, transparent 100px),
+      repeating-linear-gradient(90deg, var(--grid-line-strong) 0px, var(--grid-line-strong) 1px, transparent 1px, transparent 100px),
+      repeating-linear-gradient(0deg, var(--grid-line) 0px, var(--grid-line) 1px, transparent 1px, transparent 20px),
+      repeating-linear-gradient(90deg, var(--grid-line) 0px, var(--grid-line) 1px, transparent 1px, transparent 20px);
+    position: relative;
+    min-height: 100vh;
+  }
+
+  body::before{
+    /* radial fade so grid glows near center, fades at edges like light hitting notebook paper */
+    content:"";
+    position: fixed;
+    inset:0;
+    background: radial-gradient(ellipse 900px 700px at 50% 30%, rgba(57,255,20,0.06), transparent 70%);
+    pointer-events:none;
+  }
+
+  .scanline{
+    position: fixed;
+    left:0; right:0;
+    height: 140px;
+    background: linear-gradient(180deg, transparent, rgba(57,255,20,0.05), transparent);
+    animation: scan 7s linear infinite;
+    pointer-events:none;
+    z-index:0;
+  }
+  @keyframes scan{
+    0%{ top: -140px; }
+    100%{ top: 100vh; }
+  }
+
+  .wrap{
+    position:relative;
+    z-index:1;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 64px 24px 80px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.25em;
+    color: var(--neon);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:7px; height:7px;
+    border-radius:50%;
+    background: var(--neon);
+    box-shadow: 0 0 8px 2px var(--neon);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ opacity:1; }
+    50%{ opacity:0.35; }
+  }
+
+  h1{
+    font-family:'JetBrains Mono', monospace;
+    font-weight: 800;
+    font-size: clamp(30px, 5vw, 42px);
+    letter-spacing: -0.02em;
+    text-align:center;
+    line-height:1.1;
+    margin-bottom: 10px;
+  }
+  h1 span{ color: var(--neon); text-shadow: 0 0 24px rgba(57,255,20,0.45); }
+
+  .sub{
+    color: var(--muted);
+    font-size: 14.5px;
+    text-align:center;
+    max-width: 420px;
+    margin-bottom: 40px;
+    line-height:1.6;
+  }
+
+  /* glass card */
+  .card{
+    width:100%;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    box-shadow:
+      0 8px 32px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+    padding: 28px;
+    position: relative;
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, var(--neon), transparent);
+    opacity:0.6;
+  }
+
+  .field-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display:flex;
+    justify-content:space-between;
+  }
+  .field-label .count{ color: var(--neon-dim); }
+
+  textarea{
+    width:100%;
+    min-height: 120px;
+    resize: vertical;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(57,255,20,0.15);
+    border-radius: 10px;
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height:1.6;
+    padding: 16px;
+    outline:none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  textarea::placeholder{ color: #4a564a; }
+  textarea:focus{
+    border-color: var(--neon);
+    box-shadow: 0 0 0 3px rgba(57,255,20,0.08);
+  }
+
+  .btn{
+    width:100%;
+    margin-top: 18px;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid var(--neon);
+    background: rgba(57,255,20,0.08);
+    color: var(--neon);
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor:pointer;
+    transition: all 0.2s ease;
+    position:relative;
+  }
+  .btn:hover:not(:disabled){
+    background: var(--neon);
+    color: #05070a;
+    box-shadow: 0 0 24px rgba(57,255,20,0.45);
+  }
+  .btn:active:not(:disabled){ transform: scale(0.99); }
+  .btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  /* results */
+  .result-zone{
+    margin-top: 22px;
+    display:none;
+  }
+  .result-zone.show{ display:block; animation: fadein 0.35s ease; }
+  @keyframes fadein{
+    from{ opacity:0; transform: translateY(6px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  .top-result{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding: 18px;
+    border-radius: 12px;
+    background: var(--glass-bg-2);
+    border: 1px solid var(--glass-border);
+    margin-bottom: 18px;
+  }
+  .top-result .emoji{
+    font-size: 40px;
+    filter: drop-shadow(0 0 12px rgba(57,255,20,0.4));
+  }
+  .top-result .info{ flex:1; }
+  .top-result .label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing:0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom:4px;
+  }
+  .top-result .emotion{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight:800;
+    text-transform: capitalize;
+    color: var(--neon);
+    text-shadow: 0 0 18px rgba(57,255,20,0.35);
+  }
+  .top-result .confidence{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight:700;
+    color: var(--white);
+  }
+
+  .bars{ display:flex; flex-direction:column; gap:10px; }
+  .bar-row{
+    display:grid;
+    grid-template-columns: 90px 1fr 52px;
+    align-items:center;
+    gap:12px;
+  }
+  .bar-name{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-transform: capitalize;
+    color: var(--muted);
+  }
+  .bar-track{
+    height: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(57,255,20,0.1);
+    border-radius: 6px;
+    overflow:hidden;
+    position:relative;
+  }
+  .bar-fill{
+    height:100%;
+    background: linear-gradient(90deg, var(--neon-dim), var(--neon));
+    width:0%;
+    transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
+    box-shadow: 0 0 10px rgba(57,255,20,0.5);
+  }
+  .bar-pct{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--muted);
+    text-align:right;
+  }
+
+  .status-line{
+    margin-top: 16px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    text-align:center;
+    min-height: 18px;
+  }
+  .status-line.error{ color: #ff5c5c; }
+
+  .x-mark{
+  font-size: 1.4em;           /* h1 ke size se 40% bada */
+  display: inline-block;
+  color: var(--neon);
+  text-shadow: 0 0 24px rgba(57,255,20,0.5);
+  transform: translateY(-2px); /* thoda upar align karne ke liye, optional */
+}
+
+  footer{
+    margin-top: 40px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-align:center;
+    opacity:0.6;
+  }
+
+  @media (max-width: 480px){
+    .bar-row{ grid-template-columns: 70px 1fr 42px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .scanline, .eyebrow::before{ animation: none; }
+    .bar-fill{ transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+
+<div class="wrap">
+  <div class="eyebrow">Krishna_Great — BiGRU</div>
+  <h1>Shaniwaar <span class="x-mark">X</span> Paradox</h1>
+  <p class="sub">Type a sentence. The network reads it once, And get your Emotions</p>
+
+  <div class="card">
+    <div class="field-label">
+      <span>Input</span>
+      <span class="count"><span id="charCount">0</span> / 2000</span>
+    </div>
+    <textarea id="textInput" placeholder="Aaj mera mann bahut khush hai..." maxlength="2000"></textarea>
+    <button class="btn" id="predictBtn">Run Analysis →</button>
+    <div class="status-line" id="statusLine"></div>
+
+    <div class="result-zone" id="resultZone">
+      <div class="top-result">
+        <div class="emoji" id="topEmoji">🙂</div>
+        <div class="info">
+          <div class="label">Predicted Emotion</div>
+          <div class="emotion" id="topEmotion">—</div>
+        </div>
+        <div class="confidence" id="topConfidence">0%</div>
+      </div>
+      <div class="bars" id="barsContainer"></div>
+    </div>
+  </div>
+
+  <footer>127.0.0.1:8000 // fastapi + bigru</footer>
+</div>
+
+<script>
+  const EMOJIS = {
+    sadness: "😢",
+    joy: "😁",
+    love: "❤️",
+    anger: "😠",
+    fear: "😨",
+    surprise: "😯"
+  };
+
+  const textInput = document.getElementById('textInput');
+  const charCount = document.getElementById('charCount');
+  const predictBtn = document.getElementById('predictBtn');
+  const statusLine = document.getElementById('statusLine');
+  const resultZone = document.getElementById('resultZone');
+  const topEmoji = document.getElementById('topEmoji');
+  const topEmotion = document.getElementById('topEmotion');
+  const topConfidence = document.getElementById('topConfidence');
+  const barsContainer = document.getElementById('barsContainer');
+
+  textInput.addEventListener('input', () => {
+    charCount.textContent = textInput.value.length;
+  });
+
+  predictBtn.addEventListener('click', predictEmotion);
+  textInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) predictEmotion();
+  });
+
+  async function predictEmotion() {
+    const text = textInput.value.trim();
+    statusLine.classList.remove('error');
+
+    if (!text) {
+      statusLine.textContent = "Kuch toh likho pehle.";
+      statusLine.classList.add('error');
+      return;
+    }
+
+    predictBtn.disabled = true;
+    predictBtn.textContent = "Analysing...";
+    statusLine.textContent = "";
+
+    try {
+      const response = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || `Server returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      renderResult(data);
+      statusLine.textContent = "Done.";
+    } catch (err) {
+      statusLine.textContent = "Error: " + err.message;
+      statusLine.classList.add('error');
+      resultZone.classList.remove('show');
+    } finally {
+      predictBtn.disabled = false;
+      predictBtn.textContent = "Run Analysis →";
+    }
+  }
+
+  function renderResult(data) {
+    const emotion = data.predicted_emotion;
+    topEmoji.textContent = EMOJIS[emotion] || "🙂";
+    topEmotion.textContent = emotion;
+    topConfidence.textContent = Math.round(data.confidence * 100) + "%";
+
+    const entries = Object.entries(data.all_probabilities)
+      .sort((a, b) => b[1] - a[1]);
+
+    barsContainer.innerHTML = "";
+    entries.forEach(([label, prob]) => {
+      const pct = Math.round(prob * 100);
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML = `
+        <div class="bar-name">${label}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:0%"></div></div>
+        <div class="bar-pct">${pct}%</div>
+      `;
+      barsContainer.appendChild(row);
+      requestAnimationFrame(() => {
+        row.querySelector('.bar-fill').style.width = pct + "%";
+      });
+    });
+
+    resultZone.classList.add('show');
+  }
+</script>
+</body>
+</html>
